@@ -16,10 +16,15 @@ class RoverState:
         dx, dy = self.direction.step
         return self.x + dx, self.y + dy
 
-    def turned(self, command: Command) -> "RoverState":
-        if command is Command.RIGHT:
-            return replace(self, direction=self.direction.turn_right())
+    def turned_right(self) -> "RoverState":
+        return replace(self, direction=self.direction.turn_right())
+
+    def turned_left(self) -> "RoverState":
         return replace(self, direction=self.direction.turn_left())
+
+    def moved_to(self, cell: tuple[int, int]) -> "RoverState":
+        x, y = cell
+        return replace(self, x=x, y=y)
 
 
 @dataclass(frozen=True)
@@ -36,18 +41,25 @@ def simulate(grid: Grid, start: RoverState, commands: list[Command]) -> Simulati
     _require_valid_start(grid, start)
     state = start
     for position, command in enumerate(commands):
-        if command is not Command.FORWARD:
-            state = state.turned(command)
-            continue
-        x, y = state.cell_ahead()
-        if not grid.contains(x, y):
-            raise InvalidRequest(
-                f"la commande en position {position} ferait sortir le rover de la carte en ({x}, {y})"
-            )
-        if grid.is_obstacle(x, y):
-            return SimulationResult(state, blocked=True)
-        state = replace(state, x=x, y=y)
+        if command is Command.RIGHT:
+            state = state.turned_right()
+        elif command is Command.LEFT:
+            state = state.turned_left()
+        else:
+            target = _cell_ahead_within_map(grid, state, position)
+            if grid.is_obstacle(*target):
+                return SimulationResult(state, blocked=True)
+            state = state.moved_to(target)
     return SimulationResult(state, blocked=False)
+
+
+def _cell_ahead_within_map(grid: Grid, state: RoverState, position: int) -> tuple[int, int]:
+    x, y = state.cell_ahead()
+    if not grid.contains(x, y):
+        raise InvalidRequest(
+            f"la commande en position {position} ferait sortir le rover de la carte en ({x}, {y})"
+        )
+    return x, y
 
 
 def _require_valid_start(grid: Grid, start: RoverState) -> None:

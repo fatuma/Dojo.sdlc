@@ -13,6 +13,8 @@ from mars_rover.simulation import RoverState, simulate
 
 app = FastAPI(title="Simulateur Mars Rover")
 
+Heading = Literal["N", "S", "E", "W"]
+
 
 class SimulationRequest(BaseModel):
     # Contrat R-03 : entiers stricts (ni "3" ni true) et aucun champ en plus (D-03).
@@ -20,7 +22,7 @@ class SimulationRequest(BaseModel):
 
     x: int
     y: int
-    direction: Literal["N", "S", "E", "W"]
+    direction: Heading
     rows: list[str] = Field(alias="map")
     commands: str
 
@@ -28,7 +30,7 @@ class SimulationRequest(BaseModel):
 class SimulationResponse(BaseModel):
     x: int
     y: int
-    direction: Literal["N", "S", "E", "W"]
+    direction: Heading
     blocked: bool
 
 
